@@ -1,3 +1,5 @@
+name: wali
+
 services:
   bot:
     depends_on:
@@ -9,6 +11,7 @@ services:
     build:
       context: ../
       dockerfile: .docker/Dockerfile
+    image: wali:latest
     container_name: wali-bot
     restart: unless-stopped
     environment:
@@ -19,8 +22,7 @@ services:
       - ENTITLEMENTS_SECRET_TOKEN=${ENTITLEMENTS_SECRET_TOKEN}
       - DATABASE_URL=${DATABASE_URL}
     networks:
-      - network
-      - monitoring
+      - default
   
   postgres:
     image: postgres:16-alpine
@@ -36,9 +38,9 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     networks:
-      - network
+      - default
     volumes:
-      - postgresdata:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
 
   backup:
     image: offen/docker-volume-backup:v2.43.3
@@ -52,16 +54,13 @@ services:
       - AWS_ENDPOINT=${AWS_ENDPOINT}
       - BACKUP_RETENTION_DAYS=7
     networks:
-      - network
+      - default
     volumes:
-      - postgresdata:/backup/postgresdata:ro
+      - postgres-data:/backup/postgres-data:ro
 
 networks:
-  network:
+  default:
     driver: bridge
-  monitoring:
-    external: true
 
 volumes:
-  postgresdata:
-    driver: local
+  postgres-data:
