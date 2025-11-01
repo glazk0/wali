@@ -7,11 +7,7 @@ services:
         condition: service_healthy
       backup:
         condition: service_started
-    pull_policy: build
-    build:
-      context: ../
-      dockerfile: .docker/Dockerfile
-    image: wali:latest
+    image: ghcr.io/glazk0/wali:latest
     container_name: wali-bot
     restart: unless-stopped
     environment:
@@ -23,7 +19,6 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     networks:
       - default
-  
   postgres:
     image: postgres:16-alpine
     container_name: wali-postgres
@@ -43,7 +38,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
 
   backup:
-    image: offen/docker-volume-backup:v2.43.3
+    image: offen/docker-volume-backup:v2.46.0
     container_name: wali-backup
     restart: unless-stopped
     environment:
