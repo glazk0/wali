@@ -5,7 +5,7 @@ import { keyv } from '#database/cache';
 import { Service } from '#models/service';
 import type { DeepDesertData, DeepDesertLocation, ItemModel } from '#types/database';
 import { api } from '#utils/api';
-import { databaseUrl } from '#utils/common';
+import { databaseUrl, truncateArray } from '#utils/common';
 import { logger } from '#utils/logger';
 
 export class DeepDesert extends Service {
@@ -76,11 +76,14 @@ export class DeepDesert extends Service {
           ...message,
           '',
           unorderedList(
-            items
-              .filter((item) => item.name && item.id)
-              .map((item) =>
-                hyperlink(item.name!, hideLinkEmbed(`${databaseUrl('en', `${item.mainCategoryId}/${item.id}`)}`))
-              )
+            truncateArray(
+              items
+                .filter((item) => item.name && item.id)
+                .map((item) =>
+                  hyperlink(item.name!, hideLinkEmbed(`${databaseUrl('en', `${item.mainCategoryId}/${item.id}`)}`))
+                ),
+              10
+            )
           ),
           '',
           `To see their locations, drop counts and probabilities, you should consider navigating to the ${hyperlink('Dune Awakening Database', hideLinkEmbed(`${databaseUrl('en', 'deep-desert')}`))}.`,
