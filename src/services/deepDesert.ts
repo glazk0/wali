@@ -3,34 +3,10 @@ import { ShardClientUtil, hideLinkEmbed, hyperlink, subtext, unorderedList } fro
 import { database } from '#database';
 import { keyv } from '#database/cache';
 import { Service } from '#models/service';
-import type { ItemModel } from '#types/database';
+import type { DeepDesertData, DeepDesertLocation, ItemModel } from '#types/database';
 import { api } from '#utils/api';
-import { DATABASE_URL, databaseUrl } from '#utils/common';
+import { databaseUrl } from '#utils/common';
 import { logger } from '#utils/logger';
-
-interface DeepDesertUnique {
-  visibleLoot: Array<{
-    entity: ItemModel;
-    minQuantity: number;
-    maxQuantity: number;
-    probability: number;
-  }>;
-  locationHint: string;
-  name: string;
-  locationType: string;
-  tags: string[];
-  location: {
-    x: number;
-    y: number;
-    z: number;
-  };
-  mapMarkers: any[];
-}
-
-interface DeepDesertApiResponse {
-  uniquesList: DeepDesertUnique[];
-  nextCoriolisTime: number | null;
-}
 
 export class DeepDesert extends Service {
   private static readonly CACHE_KEY = 'deep-desert:last-coriolis-time';
@@ -71,31 +47,36 @@ export class DeepDesert extends Service {
         return;
       }
 
-      if (!data.nextCoriolisTime) {
+      if (!data.nextCoriolisTimeOCE) {
         logger.warn('Next Coriolis time is null, skipping broadcast');
         return;
       }
 
-      logger.info(`New Coriolis reset detected at ${new Date(data.nextCoriolisTime * 1000).toISOString()}`);
+      if (!data.locations || data.locations.length === 0) {
+        logger.warn('No Deep Desert locations data available');
+        return;
+      }
 
-      this.lastCoriolisTime = data.nextCoriolisTime;
+      logger.info(`New Coriolis reset detected at ${new Date(data.nextCoriolisTimeOCE * 1000).toISOString()}`);
 
-      const uniques = this.getUniques(data.uniquesList);
+      this.lastCoriolisTime = data.nextCoriolisTimeOCE;
+
+      const items = this.getItems(data.locations);
 
       let message: string | string[] = [];
 
       message = [
-        `**This Week's Deep Desert Uniques**`,
+        `**This Week's Deep Desert items**`,
         '',
-        `Next Coriolis Reset: <t:${data.nextCoriolisTime}:F> (<t:${data.nextCoriolisTime}:R>)`,
+        `Next Coriolis Reset: <t:${data.nextCoriolisTimeOCE}:F> (<t:${data.nextCoriolisTimeOCE}:R>)`,
       ];
 
-      if (uniques.length) {
+      if (items.length) {
         message = [
           ...message,
           '',
           unorderedList(
-            uniques
+            items
               .filter((item) => item.name && item.id)
               .map((item) =>
                 hyperlink(item.name!, hideLinkEmbed(`${databaseUrl('en', `${item.mainCategoryId}/${item.id}`)}`))
@@ -184,9 +165,9 @@ export class DeepDesert extends Service {
     }
   }
 
-  private async fetchDeepDesertData(): Promise<DeepDesertApiResponse | null> {
+  private async fetchDeepDesertData(): Promise<DeepDesertData | null> {
     try {
-      const data = await api.get<DeepDesertApiResponse>('dd-live-data', 'en');
+      const data = await api.get<DeepDesertData>('deep-desert-{{seed}}', 'en');
       return data;
     } catch (error) {
       logger.error(`Failed to fetch Deep Desert data: ${error}`);
@@ -194,19 +175,24 @@ export class DeepDesert extends Service {
     }
   }
 
-  private isNewCoriolisReset(data: DeepDesertApiResponse): boolean {
-    return !this.lastCoriolisTime || data.nextCoriolisTime !== this.lastCoriolisTime;
+  private isNewCoriolisReset(data: DeepDesertData): boolean {
+    return !this.lastCoriolisTime || data.nextCoriolisTimeOCE !== this.lastCoriolisTime;
   }
 
-  private getUniques(deepDesertUniques: DeepDesertUnique[]): ItemModel[] {
+  private getItems(locations: DeepDesertLocation[]): ItemModel[] {
     const results: Record<string, ItemModel> = {};
-    for (const unique of deepDesertUniques) {
-      for (const loot of unique.visibleLoot) {
-        if (!results[loot.entity.id]) {
-          results[loot.entity.id] = loot.entity;
+
+    for (const location of locations.filter((loc) => loc.loot && loc.loot.length > 0)) {
+      for (const loot of location.loot!.filter((l) => l.entity?.tier === 6)) {
+        if (!loot.entity?.id) continue;
+
+        const key = loot.entity.id;
+        if (!results[key]) {
+          results[key] = (loot.entity.schematicOutputItem ?? loot.entity) as ItemModel;
         }
       }
     }
+
     return Object.values(results).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }
 
