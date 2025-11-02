@@ -69,5 +69,5 @@ export const truncateArray = <T>(arr: T[], length: number): Array<T | string> =>
 };
 
 export const databaseUrl = (locale: SupportedLocales, path: string): string => {
-  return `${DATABASE_URL}/${locale}/${path}`;
+  return `${DATABASE_URL}/${locale}/${path}?ref=wali`;
 };
