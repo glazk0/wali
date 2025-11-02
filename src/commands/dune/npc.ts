@@ -14,7 +14,7 @@ import { Command, type Context } from '#models/command';
 import { Embed } from '#models/embed';
 import { type NpcModel } from '#types/database';
 import { api } from '#utils/api';
-import { DATABASE_URL, PROXY_URL, truncateArray } from '#utils/common';
+import { DATABASE_URL, databaseUrl, PROXY_URL, truncateArray } from '#utils/common';
 
 export default new (class extends Command {
   constructor() {
@@ -53,7 +53,7 @@ export default new (class extends Command {
 
     if (data.name) {
       embed.setTitle(data.name);
-      embed.setURL(`${DATABASE_URL}/${data.mainCategoryId}/${data.id}`);
+      embed.setURL(databaseUrl(context.locale, `${data.mainCategoryId}/${data.id}`));
     }
 
     if (data.description) {
@@ -69,7 +69,7 @@ export default new (class extends Command {
     if (data.contracts?.length) {
       const contracts = data.contracts.map((contract) => {
         if (!contract?.name) return 'Unknown';
-        return hyperlink(contract.name ?? 'Unknown', `${DATABASE_URL}/${contract.mainCategoryId}/${contract.id}`);
+        return hyperlink(contract.name ?? 'Unknown', databaseUrl(context.locale, `${contract.mainCategoryId}/${contract.id}`));
       });
 
       fields.push({
@@ -81,7 +81,7 @@ export default new (class extends Command {
     if (data.quests?.length) {
       const quests = data.quests.map((quest) => {
         if (!quest?.name) return 'Unknown';
-        return hyperlink(quest.name ?? 'Unknown', `${DATABASE_URL}/${quest.mainCategoryId}/${quest.id}`);
+        return hyperlink(quest.name ?? 'Unknown', databaseUrl(context.locale, `${quest.mainCategoryId}/${quest.id}`));
       });
 
       fields.push({
@@ -105,10 +105,10 @@ export default new (class extends Command {
           : '';
 
         if (item.stockAmount) {
-          return `x${item.stockAmount} ${hyperlink(item.entity.name, `${DATABASE_URL}/${item.entity.mainCategoryId}/${item.entity.id}`)}${priceStr}`;
+          return `x${item.stockAmount} ${hyperlink(item.entity.name, databaseUrl(context.locale, `${item.entity.mainCategoryId}/${item.entity.id}`))}${priceStr}`;
         }
 
-        return `∞ ${hyperlink(item.entity.name, `${DATABASE_URL}/${item.entity.mainCategoryId}/${item.entity.id}`)}${priceStr}`;
+        return `∞ ${hyperlink(item.entity.name, databaseUrl(context.locale, `${item.entity.mainCategoryId}/${item.entity.id}`))}${priceStr}`;
       });
 
       fields.push({
@@ -122,7 +122,7 @@ export default new (class extends Command {
         new ButtonBuilder({
           label: 'View locations',
           style: ButtonStyle.Link,
-          url: `${DATABASE_URL}/${data.mainCategoryId}/${data.id}`,
+          url: databaseUrl(context.locale, `${data.mainCategoryId}/${data.id}`),
         })
       );
     }

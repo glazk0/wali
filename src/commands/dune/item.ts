@@ -17,7 +17,7 @@ import { Embed } from '#models/embed';
 import { type AttributeValueModel, type ItemModel } from '#types/database';
 import { api } from '#utils/api';
 import { createColorPaletteImage } from '#utils/canvas';
-import { DATABASE_URL, PROXY_URL, truncateArray } from '#utils/common';
+import { DATABASE_URL, PROXY_URL, databaseUrl, truncateArray } from '#utils/common';
 
 export default new (class extends Command {
   constructor() {
@@ -56,7 +56,7 @@ export default new (class extends Command {
 
     if (data.name) {
       embed.setTitle(data.name);
-      embed.setURL(`${DATABASE_URL}/${data.mainCategoryId}/${data.id}`);
+      embed.setURL(databaseUrl(context.locale, `${data.mainCategoryId}/${data.id}`));
     }
 
     if (data.description) {
@@ -72,7 +72,7 @@ export default new (class extends Command {
         new ButtonBuilder({
           label: 'View locations',
           style: ButtonStyle.Link,
-          url: `${DATABASE_URL}/${data.mainCategoryId}/${data.id}`,
+          url: databaseUrl(context.locale, `${data.mainCategoryId}/${data.id}`),
         })
       );
     }
@@ -100,7 +100,7 @@ export default new (class extends Command {
     if (data.requiredForContract?.length) {
       const contracts = data.requiredForContract.map((contract) => {
         if (!contract?.name) return 'Unknown';
-        return hyperlink(contract.name ?? 'Unknown', `${DATABASE_URL}/${contract.mainCategoryId}/${contract.id}`);
+        return hyperlink(contract.name ?? 'Unknown', databaseUrl(context.locale, `${contract.mainCategoryId}/${contract.id}`));
       });
 
       fields.push({
@@ -112,7 +112,7 @@ export default new (class extends Command {
     if (data.soldBy?.length) {
       const vendors = data.soldBy.map((vendor) => {
         if (!vendor?.entity) return 'Unknown';
-        return hyperlink(vendor.entity.name ?? 'Unknown', `${DATABASE_URL}/${vendor.entity.mainCategoryId}/${vendor.entity.id}`);
+        return hyperlink(vendor.entity.name ?? 'Unknown', databaseUrl(context.locale, `${vendor.entity.mainCategoryId}/${vendor.entity.id}`));
       });
       fields.push({
         name: 'Sold By',
@@ -125,10 +125,10 @@ export default new (class extends Command {
         if (!reward?.entity) return 'Unknown';
 
         if (reward.count && reward.count > 1) {
-          return `x${reward.count} ${hyperlink(reward.entity.name ?? 'Unknown', `${DATABASE_URL}/${reward.entity.mainCategoryId}/${reward.entity.id}`)}`;
+          return `x${reward.count} ${hyperlink(reward.entity.name ?? 'Unknown', databaseUrl(context.locale, `${reward.entity.mainCategoryId}/${reward.entity.id}`))}`;
         }
 
-        return hyperlink(reward.entity.name ?? 'Unknown', `${DATABASE_URL}/${reward.entity.mainCategoryId}/${reward.entity.id}`);
+        return hyperlink(reward.entity.name ?? 'Unknown', databaseUrl(context.locale, `${reward.entity.mainCategoryId}/${reward.entity.id}`));
       });
       fields.push({
         name: 'Rewarded From',

@@ -67,3 +67,7 @@ export const truncateArray = <T>(arr: T[], length: number): Array<T | string> =>
 
   return [...truncatedArray, `and ${remaining} more`];
 };
+
+export const databaseUrl = (locale: SupportedLocales, path: string): string => {
+  return `${DATABASE_URL}/${locale}/${path}`;
+};

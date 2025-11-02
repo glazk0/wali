@@ -14,7 +14,7 @@ import { Command, type Context } from '#models/command';
 import { Embed } from '#models/embed';
 import { type SkillAttributeBonusModel, type SkillModel } from '#types/database';
 import { api } from '#utils/api';
-import { DATABASE_URL, PROXY_URL } from '#utils/common';
+import { DATABASE_URL, PROXY_URL, databaseUrl } from '#utils/common';
 
 export default new (class extends Command {
   constructor() {
@@ -54,14 +54,14 @@ export default new (class extends Command {
         new ButtonBuilder({
           label: 'Try the Skill Builder',
           style: ButtonStyle.Link,
-          url: `${DATABASE_URL}/skill-builder`,
+          url: databaseUrl(context.locale, 'skill-builder'),
         }),
       ],
     });
 
     if (data.name) {
       embed.setTitle(data.name);
-      embed.setURL(`${DATABASE_URL}/${data.mainCategoryId}/${data.id}`);
+      embed.setURL(databaseUrl(context.locale, `${data.mainCategoryId}/${data.id}`));
     }
 
     if (data.description) {

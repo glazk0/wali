@@ -1,11 +1,11 @@
-import { hideLinkEmbed, hyperlink, ShardClientUtil, subtext, unorderedList } from 'discord.js';
+import { ShardClientUtil, hideLinkEmbed, hyperlink, subtext, unorderedList } from 'discord.js';
 
 import { database } from '#database';
 import { keyv } from '#database/cache';
 import { Service } from '#models/service';
 import type { ItemModel } from '#types/database';
 import { api } from '#utils/api';
-import { DATABASE_URL } from '#utils/common';
+import { DATABASE_URL, databaseUrl } from '#utils/common';
 import { logger } from '#utils/logger';
 
 interface DeepDesertUnique {
@@ -29,7 +29,7 @@ interface DeepDesertUnique {
 
 interface DeepDesertApiResponse {
   uniquesList: DeepDesertUnique[];
-  nextCoriolisTime: number;
+  nextCoriolisTime: number | null;
 }
 
 export class DeepDesert extends Service {
@@ -71,6 +71,11 @@ export class DeepDesert extends Service {
         return;
       }
 
+      if (!data.nextCoriolisTime) {
+        logger.warn('Next Coriolis time is null, skipping broadcast');
+        return;
+      }
+
       logger.info(`New Coriolis reset detected at ${new Date(data.nextCoriolisTime * 1000).toISOString()}`);
 
       this.lastCoriolisTime = data.nextCoriolisTime;
@@ -89,23 +94,21 @@ export class DeepDesert extends Service {
         message = [
           ...message,
           '',
-          unorderedList(uniques.filter(item => item.name && item.id).map(item => hyperlink(item.name!, hideLinkEmbed(`${DATABASE_URL}/${item.mainCategoryId}/${item.id}`)))),
+          unorderedList(
+            uniques
+              .filter((item) => item.name && item.id)
+              .map((item) =>
+                hyperlink(item.name!, hideLinkEmbed(`${databaseUrl('en', `${item.mainCategoryId}/${item.id}`)}`))
+              )
+          ),
           '',
-          `To see their locations, drop counts and probabilities, you should consider navigating to the ${hyperlink('Dune Awakening Database', hideLinkEmbed(`${DATABASE_URL}/deep-desert`))}.`,
-        ]
+          `To see their locations, drop counts and probabilities, you should consider navigating to the ${hyperlink('Dune Awakening Database', hideLinkEmbed(`${databaseUrl('en', 'deep-desert')}`))}.`,
+        ];
       } else {
-        message = [
-          ...message,
-          '',
-          'No unique items available this week.',
-        ]
+        message = [...message, '', 'No unique items available this week.'];
       }
 
-      message = [
-        ...message,
-        '',
-        subtext('The times are in your local timezone.'),
-      ]
+      message = [...message, '', subtext('The times are in your local timezone.')];
 
       message = message.join('\n');
 
@@ -117,7 +120,10 @@ export class DeepDesert extends Service {
 
       await this.manager?.broadcastEval(
         async (client, { settings, message }) => {
-          const shardSettings = settings.filter((s) => ShardClientUtil.shardIdForGuildId(s.guildId, client.options.shardCount as number) === client.shard?.ids[0]);
+          const shardSettings = settings.filter(
+            (s) =>
+              ShardClientUtil.shardIdForGuildId(s.guildId, client.options.shardCount as number) === client.shard?.ids[0]
+          );
 
           for (const setting of shardSettings) {
             const channel = client.channels.cache.get(setting.channelId);
@@ -129,7 +135,7 @@ export class DeepDesert extends Service {
 
             try {
               const webhooks = await channel?.fetchWebhooks();
-              const webhook = webhooks.find(w => w.id === setting.webhookId && w.token === setting.webhookToken);
+              const webhook = webhooks.find((w) => w.id === setting.webhookId && w.token === setting.webhookToken);
 
               if (!webhook) {
                 console.warn(`Webhook not found for channel ${setting.channelId}`);
@@ -137,9 +143,9 @@ export class DeepDesert extends Service {
               }
 
               const messages = await channel.messages.fetch({ limit: 100 });
-              const twoWeeksAgo = Date.now() - (14 * 24 * 60 * 60 * 1000);
+              const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
 
-              const oldMessages = messages.filter(m => {
+              const oldMessages = messages.filter((m) => {
                 return m.webhookId === setting.webhookId && m.createdTimestamp > twoWeeksAgo;
               });
 
@@ -168,7 +174,7 @@ export class DeepDesert extends Service {
           context: {
             settings,
             message,
-          }
+          },
         }
       );
 
@@ -189,7 +195,7 @@ export class DeepDesert extends Service {
   }
 
   private isNewCoriolisReset(data: DeepDesertApiResponse): boolean {
-    return !this.lastCoriolisTime || (data.nextCoriolisTime !== this.lastCoriolisTime);
+    return !this.lastCoriolisTime || data.nextCoriolisTime !== this.lastCoriolisTime;
   }
 
   private getUniques(deepDesertUniques: DeepDesertUnique[]): ItemModel[] {

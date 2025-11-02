@@ -1,19 +1,19 @@
 import {
-  type APIEmbedField,
   ActionRowBuilder,
   ApplicationCommandOptionType,
   AutocompleteInteraction,
   ButtonBuilder,
   CommandInteraction,
   hyperlink,
-  unorderedList
+  unorderedList,
+  type APIEmbedField
 } from 'discord.js';
 
 import { Command, type Context } from '#models/command';
 import { Embed } from '#models/embed';
 import { type PlaceableModel } from '#types/database';
 import { api } from '#utils/api';
-import { DATABASE_URL, PROXY_URL, truncateArray } from '#utils/common';
+import { DATABASE_URL, databaseUrl, PROXY_URL, truncateArray } from '#utils/common';
 
 export default new (class extends Command {
   constructor() {
@@ -66,7 +66,7 @@ export default new (class extends Command {
 
     if (data.name) {
       embed.setTitle(data.name);
-      embed.setURL(`${DATABASE_URL}/buildables/${data.id}`);
+      embed.setURL(databaseUrl(context.locale, `${data.mainCategoryId}/${data.id}`));
     }
 
     if (data.description) {
@@ -84,9 +84,9 @@ export default new (class extends Command {
         if (!ingredient?.entity?.name) return 'Unknown';
         if (ingredient?.quantity) {
           const finalQuantity = deepDesert ? Math.ceil((ingredient.quantity * quantity) / 2) : ingredient.quantity * quantity;
-          return `x${finalQuantity} ${hyperlink(ingredient.entity.name, `${DATABASE_URL}/items/${ingredient.entity.id}`)}`;
+          return `x${finalQuantity} ${hyperlink(ingredient.entity.name, databaseUrl(context.locale, `${ingredient.entity.mainCategoryId}/${ingredient.entity.id}`))}`;
         }
-        return hyperlink(ingredient.entity.name, `${DATABASE_URL}/items/${ingredient.entity.id}`);
+        return hyperlink(ingredient.entity.name, databaseUrl(context.locale, `${ingredient.entity.mainCategoryId}/${ingredient.entity.id}`));
       });
       fields.push({
         name: 'Ingredients',
