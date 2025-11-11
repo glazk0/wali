@@ -44,7 +44,10 @@ const customFetch = async <T>(path: string): Promise<T | null> => {
 
   try {
     const headers: Record<string, string> = config.secretToken ? { 'X-Secret-Token': config.secretToken } : {};
-    const response = await fetch(format(path), { headers });
+    const response = await fetch(format(path), { headers: {
+      ...headers,
+      'Content-Type': 'application/json'
+    } });
     if (!response.ok) {
       logger.error(`HTTP error ${response.status} while fetching ${format(path)}`);
       return null;
